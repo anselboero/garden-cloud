@@ -89,4 +89,6 @@ steps:
         echo "Branch '$BRANCH_NAME' does not represent an official environment."
         echo "*******************************************************************************"
       fi
+options:
+  logging: CLOUD_LOGGING_ONLY
 # [END tf-apply]
