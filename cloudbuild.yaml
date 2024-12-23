@@ -30,8 +30,13 @@ steps:
   args: 
   - '-c'
   - |
-      if [ -d "environments/$BRANCH_NAME/" ]; then
-        cd environments/$BRANCH_NAME
+      if [ "$BRANCH_NAME" == "main" ]; then
+        ENV_NAME="prod"
+      else
+        ENV_NAME="$BRANCH_NAME"
+      fi
+      if [ -d "environments/$${ENV_NAME}/" ]; then
+        cd environments/$${ENV_NAME}
         terraform init
       else
         for dir in environments/*/
@@ -54,9 +59,14 @@ steps:
   entrypoint: 'sh'
   args: 
   - '-c'
-  - | 
-      if [ -d "environments/$BRANCH_NAME/" ]; then
-        cd environments/$BRANCH_NAME
+  - |
+      if [ "$BRANCH_NAME" == "main" ]; then
+        ENV_NAME="prod"
+      else
+        ENV_NAME="$BRANCH_NAME"
+      fi
+      if [ -d "environments/$${ENV_NAME}/" ]; then
+        cd environments/$${ENV_NAME}
         terraform plan
       else
         for dir in environments/*/
@@ -81,8 +91,13 @@ steps:
   args: 
   - '-c'
   - | 
-      if [ -d "environments/$BRANCH_NAME/" ]; then
-        cd environments/$BRANCH_NAME      
+      if [ "$BRANCH_NAME" == "main" ]; then
+        ENV_NAME="prod"
+      else
+        ENV_NAME="$BRANCH_NAME"
+      fi
+      if [ -d "environments/$${ENV_NAME}/" ]; then
+        cd environments/$${ENV_NAME}      
         terraform apply -auto-approve
       else
         echo "***************************** SKIPPING APPLYING *******************************"
