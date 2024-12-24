@@ -1,6 +1,6 @@
 // where source code will be stored
 resource "google_storage_bucket" "default" {
-    name = "${project}-gcf-source"
+    name = "${var.project}-gcf-source"
     location = "europe-west10"
     uniform_bucket_level_access = true
 }
