@@ -1,1 +1,1 @@
-project = "anselboero-website-prod"
+variable "project" {}
