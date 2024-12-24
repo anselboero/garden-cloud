@@ -9,7 +9,7 @@ data "archive_file" "default" {
     type = "zip"
     output_path = "/tmp/function-source.zip"
     // TODO: Find alternative to this path, don't like it
-    source_dir = ""../../modules/cloud_run_functions/functions"
+    source_dir = "../../modules/cloud_run_functions/functions"
 }
 
 resource "google_storage_bucket_object" "object" {
