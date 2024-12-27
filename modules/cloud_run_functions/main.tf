@@ -12,8 +12,15 @@ data "archive_file" "default" {
     source_dir = "../../modules/cloud_run_functions/functions/get_last_movie_watched/"
 }
 
+// name of the file in the bucket. Should change every time the source code changes,
+// in order to enable Terraform trigger the cloud run rebuild
+// source: https://stackoverflow.com/questions/68488277/how-can-i-deploy-google-cloud-functions-in-ci-cd-without-re-deploying-unchanged/68488770#68488770
+locals {
+  cf_zip_archive_name = "get_last_movie_watched_source_code_${data.archive_file.default.output_sha}.zip"
+}
+
 resource "google_storage_bucket_object" "object" {
-    name   = "function-source.zip"
+    name   = local.cf_zip_archive_name
     bucket = google_storage_bucket.default.name
     source = data.archive_file.default.output_path # Add path to the zipped function source code
 }
