@@ -10,6 +10,8 @@ def get_last_movie_watched(request):
         Data is read from MyMoviesDb Google Sheet
         values:
             title: Movie Title
+            rating: My Movie Rating from 1 to 10
+            comment: My personal short comment about the movie
             imdb_link: Link to the IMDB movie page
             poster_link: Link to the poster image
     """
@@ -22,12 +24,14 @@ def get_last_movie_watched(request):
     sheet = service.spreadsheets()
 
     # Reading LastMovieWatched sheet, first row only
-    result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="LastMovieWatched!A2:C2").execute()
+    result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="LastMovieWatched!A2:E2").execute()
     values = result.get("values", [])[0]
 
     output = {}
     output['title'] = values[0]
-    output['imdb_link'] = values[1]
-    output['poster_link'] = values[2]
+    output['rating'] = values[1]
+    output['comment'] = values[2]
+    output['imdb_link'] = values[3]
+    output['poster_link'] = values[4]
     
     return json.dumps(output), 200, {'ContentType': 'application/json'}
