@@ -18,6 +18,13 @@ def get_last_movie_watched(request):
     SPREADSHEET_ID = "1evnjLFzM3apXph0sUahqcbCwuEKCeAZh6bp3bdshSm4"
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
+    headers = {
+        'ContentType': 'application/json',
+        'Access-Control-Allow-Origin': 'anselboero.com',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'Content-Type',
+    }
+    
     credentials, _ = default(scopes = SCOPES)
     service = build("sheets", "v4", credentials=credentials)
 
@@ -34,4 +41,4 @@ def get_last_movie_watched(request):
     output['imdb_link'] = values[3]
     output['poster_link'] = values[4]
     
-    return json.dumps(output), 200, {'ContentType': 'application/json'}
+    return (json.dumps(output), 200, headers)
