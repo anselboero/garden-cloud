@@ -20,7 +20,7 @@ def get_last_movie_watched(request):
 
     headers = {
         'ContentType': 'application/json',
-        'Access-Control-Allow-Origin': 'anselboero.com',
+        'Access-Control-Allow-Origin': 'https://anselboero.com',
         'Access-Control-Allow-Methods': 'GET',
         'Access-Control-Allow-Headers': 'Content-Type',
     }
