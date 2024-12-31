@@ -5,6 +5,34 @@ resource "google_storage_bucket" "default" {
     uniform_bucket_level_access = true
 }
 
+// storing the bucket with json and poster img, used by the website
+resource "google_storage_bucket" "last_movie_watched" {
+    name = "${var.project}-last-movie-watched"
+    location = "europe-west10"
+    uniform_bucket_level_access = true
+
+    cors {
+      origin          = ["https://anselboero.com"]
+      method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+      response_header = ["*"]
+  }
+}
+
+// public read-only access to the bucket
+data "google_iam_policy" "viewer" {
+  binding {
+    role = "roles/storage.objectViewer"
+    members = [
+        "allUsers",
+    ] 
+  }
+}
+
+resource "google_storage_bucket_iam_policy" "editor" {
+  bucket = "${google_storage_bucket.last_movie_watched.name}"
+  policy_data = "${data.google_iam_policy.viewer.policy_data}"
+}
+
 data "archive_file" "default" {
     type = "zip"
     output_path = "/tmp/function-source.zip"
@@ -42,10 +70,15 @@ resource "google_cloudfunctions2_function" "default" {
       }
     }
 
+    depends_on = [google_storage_bucket.last_movie_watched]
+
     service_config {
       max_instance_count = 1
       available_memory   = "256M"
       timeout_seconds    = 60
+      environment_variables = {
+        BUCKET_NAME = google_storage_bucket.last_movie_watched.name
+      }
     }
   }
 
@@ -56,6 +89,25 @@ resource "google_cloud_run_service_iam_member" "member" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+// triggering the function every 6 hours
+resource "google_cloud_scheduler_job" "trigger_function" {
+  name        = "trigger-get-last-movie-watched"
+  description = "Trigger the Cloud Function every 6 hours"
+  region = "europe-west3"
+
+  schedule    = "0 */6 * * *" # Every 6 hours
+  time_zone   = "UTC"         # Specify your desired time zone
+
+  http_target {
+    http_method = "GET"  # Use GET or POST depending on your function
+    uri         = google_cloudfunctions2_function.default.service_config[0].uri
+  }
+
+  # Set a deadline for the job's execution
+  attempt_deadline = "320s" # Maximum execution time of 320 seconds
+}
+
 
 output "function_uri" {
     value = google_cloudfunctions2_function.default.service_config[0].uri

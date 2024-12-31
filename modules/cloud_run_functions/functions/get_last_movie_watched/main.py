@@ -2,6 +2,8 @@ import functions_framework
 import json
 from google.auth import default
 from googleapiclient.discovery import build
+from google.cloud import storage
+import os
 
 @functions_framework.http
 def get_last_movie_watched(request):
@@ -17,6 +19,9 @@ def get_last_movie_watched(request):
     """
     SPREADSHEET_ID = "1evnjLFzM3apXph0sUahqcbCwuEKCeAZh6bp3bdshSm4"
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+    BUCKET_NAME = os.environ.get("BUCKET_NAME")
+    print(BUCKET_NAME)
+    FILE_NAME = 'last_movie_watched.json'
 
     headers = {
         'ContentType': 'application/json',
@@ -41,4 +46,13 @@ def get_last_movie_watched(request):
     output['imdb_link'] = values[3]
     output['poster_link'] = values[4]
     
+    save_to_gcs(BUCKET_NAME, FILE_NAME, output)
     return (json.dumps(output), 200, headers)
+
+
+def save_to_gcs(bucket_name, file_name, data):
+    client = storage.Client() 
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(file_name)
+
+    blob.upload_from_string(json.dumps(data), content_type='application/json')
