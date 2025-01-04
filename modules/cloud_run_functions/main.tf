@@ -49,53 +49,39 @@ resource "google_storage_bucket_iam_policy" "editor" {
   policy_data = "${data.google_iam_policy.viewer.policy_data}"
 }
 
-data "archive_file" "get-last-movie-watched" {
+data "archive_file" "gsheet-to-gcs" {
     type = "zip"
-    output_path = "/tmp/function-source-get-last-movie-watched.zip"
+    output_path = "/tmp/function-source-gsheet-to-gcs.zip"
     // TODO: Find alternative to this path, don't like it
-    source_dir = "../../modules/cloud_run_functions/functions/get_last_movie_watched/"
-}
-
-data "archive_file" "get-net-worth" {
-    type = "zip"
-    output_path = "/tmp/function-source-get-net-worth.zip"
-    // TODO: Find alternative to this path, don't like it
-    source_dir = "../../modules/cloud_run_functions/functions/get_net_worth/"
+    source_dir = "../../modules/cloud_run_functions/functions/gsheet_to_gcs/"
 }
 
 // name of the file in the bucket. Should change every time the source code changes,
 // in order to enable Terraform trigger the cloud run rebuild
 // source: https://stackoverflow.com/questions/68488277/how-can-i-deploy-google-cloud-functions-in-ci-cd-without-re-deploying-unchanged/68488770#68488770
 locals {
-  get_last_movie_wathced_zip_archive_name = "get_last_movie_watched_source_code_${data.archive_file.get-last-movie-watched.output_sha}.zip"
-  get_net_worth_zip_archive_name = "get_net_worth_source_code_${data.archive_file.get-net-worth.output_sha}.zip"
+  gsheet_to_gcs_zip_archive_name = "gsheet_to_gcs_source_code_${data.archive_file.gsheet-to-gcs.output_sha}.zip"
 }
 
-resource "google_storage_bucket_object" "get_last_movie_watched_sc" {
-    name   = local.get_last_movie_wathced_zip_archive_name
+resource "google_storage_bucket_object" "gsheet_to_gcs_sc" {
+    name   = local.gsheet_to_gcs_zip_archive_name
     bucket = google_storage_bucket.default.name
-    source = data.archive_file.get-last-movie-watched.output_path # Add path to the zipped function source code
-}
-
-resource "google_storage_bucket_object" "get_net_worth_sc" {
-    name   = local.get_net_worth_zip_archive_name
-    bucket = google_storage_bucket.default.name
-    source = data.archive_file.get-net-worth.output_path # Add path to the zipped function source code
+    source = data.archive_file.gsheet-to-gcs.output_path # Add path to the zipped function source code
 }
 
 // name should not have underscores (_)
-resource "google_cloudfunctions2_function" "get-last-movie-watched" {
-    name        = "get-last-movie-watched"
+resource "google_cloudfunctions2_function" "gsheet-to-gcs" {
+    name        = "gsheet-to-gcs"
     location    = "europe-west10"
-    description = "Get Last movie watched from MyMoviesDb Gsheet"
+    description = "Given a Spreadsheet containing an API sheet, will store the result to JSON file"
 
     build_config {
       runtime     = "python312"
-      entry_point = "get_last_movie_watched" # Set the entry point
+      entry_point = "gsheet_to_gcs" # Set the entry point
       source {
         storage_source {
           bucket = google_storage_bucket.default.name
-          object = google_storage_bucket_object.get_last_movie_watched_sc.name
+          object = google_storage_bucket_object.gsheet_to_gcs_sc.name
         }
       }
     }
@@ -106,37 +92,6 @@ resource "google_cloudfunctions2_function" "get-last-movie-watched" {
       max_instance_count = 1
       available_memory   = "256M"
       timeout_seconds    = 60
-      environment_variables = {
-        BUCKET_NAME = google_storage_bucket.apis.name
-      }
-    }
-}
-
-resource "google_cloudfunctions2_function" "get-net-worth" {
-    name        = "get-net-worth"
-    location    = "europe-west10"
-    description = "Get Net Worth data from My Net Worth Gsheet"
-
-    build_config {
-      runtime     = "python312"
-      entry_point = "get_net_worth" # Set the entry point
-      source {
-        storage_source {
-          bucket = google_storage_bucket.default.name
-          object = google_storage_bucket_object.get_net_worth_sc.name
-        }
-      }
-    }
-
-    depends_on = [google_storage_bucket.apis]
-
-    service_config {
-      max_instance_count = 1
-      available_memory   = "256M"
-      timeout_seconds    = 60
-      environment_variables = {
-        BUCKET_NAME = google_storage_bucket.apis.name
-      }
     }
 }
 
@@ -150,15 +105,22 @@ resource "google_cloud_scheduler_job" "get-last-movie-watched" {
   time_zone   = "UTC"         # Specify your desired time zone
 
   http_target {
-    http_method = "GET"  # Use GET or POST depending on your function
-    uri         = google_cloudfunctions2_function.get-last-movie-watched.service_config[0].uri
+    http_method = "POST"  # Use GET or POST depending on your function
+    uri         = google_cloudfunctions2_function.gsheet-to-gcs.service_config[0].uri
+    body        = base64encode(jsonencode({
+      spreadsheet_id = "1evnjLFzM3apXph0sUahqcbCwuEKCeAZh6bp3bdshSm4"
+      gcs_bucket_name    = google_storage_bucket.apis.name
+      json_output_filename  = "last_movie_watched.json"
+    }))
+
+    headers = {
+      "Content-Type" = "application/json"
+    }
 
     oidc_token {
       service_account_email = var.service_account_email
     }
   }
-
-
   # Set a deadline for the job's execution
   attempt_deadline = "320s" # Maximum execution time of 320 seconds
 }
@@ -172,19 +134,21 @@ resource "google_cloud_scheduler_job" "get-net-worth" {
   time_zone   = "UTC"         # Specify your desired time zone
 
   http_target {
-    http_method = "GET"  # Use GET or POST depending on your function
-    uri         = google_cloudfunctions2_function.get-net-worth.service_config[0].uri
+    http_method = "POST"  # Use GET or POST depending on your function
+    uri         = google_cloudfunctions2_function.gsheet-to-gcs.service_config[0].uri
+    body        = base64encode(jsonencode({
+      spreadsheet_id = "1G_CqV95lI7r-XtgpO5UOzsB_h77G4JVV9kThdzfsujk"
+      gcs_bucket_name    = google_storage_bucket.apis.name
+      json_output_filename  = "net_worth.json"
+    }))
+    headers = {
+      "Content-Type" = "application/json"
+    }
 
     oidc_token {
       service_account_email = var.service_account_email
     }
   }
-
   # Set a deadline for the job's execution
   attempt_deadline = "320s" # Maximum execution time of 320 seconds
-}
-
-
-output "function_uri" {
-    value = google_cloudfunctions2_function.get-last-movie-watched.service_config[0].uri
 }
