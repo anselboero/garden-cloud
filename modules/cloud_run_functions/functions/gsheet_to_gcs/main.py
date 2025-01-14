@@ -38,8 +38,8 @@ def gsheet_to_gcs(request):
     output = {}
     for row in values:
         ## check if the key is non-empty
-        if row[0]:
-            output[row[0]] = row[1] if len(row) > 1 else None
+        if row[0] and len(row) > 1:
+            output[row[0]] = row[1]
     
     
     
