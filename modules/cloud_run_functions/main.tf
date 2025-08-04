@@ -125,6 +125,35 @@ resource "google_cloud_scheduler_job" "get-last-movie-watched" {
   attempt_deadline = "320s" # Maximum execution time of 320 seconds
 }
 
+resource "google_cloud_scheduler_job" "get-currently-reading-book" {
+  name        = "trigger-get-currently-reading-book"
+  description = "Trigger the Cloud Function every 6 hours. Triggering the currently reading book."
+  region = "europe-west3"
+
+  schedule    = "0 */6 * * *" # Every 6 hours
+  time_zone   = "UTC"         # Specify your desired time zone
+
+  http_target {
+    http_method = "POST"  # Use GET or POST depending on your function
+    uri         = google_cloudfunctions2_function.gsheet-to-gcs.service_config[0].uri
+    body        = base64encode(jsonencode({
+      spreadsheet_id = "14vh5NBXbr2XAVyDW-EyhlpVUKcfPGtkiHh85gDdVz5o"
+      gcs_bucket_name    = google_storage_bucket.apis.name
+      json_output_filename  = "currently_reading_book.json"
+    }))
+
+    headers = {
+      "Content-Type" = "application/json"
+    }
+
+    oidc_token {
+      service_account_email = var.service_account_email
+    }
+  }
+  # Set a deadline for the job's execution
+  attempt_deadline = "320s" # Maximum execution time of 320 seconds
+}
+
 resource "google_cloud_scheduler_job" "get-net-worth" {
   name        = "trigger-get-net-worth"
   description = "Trigger the Cloud Function every 6 hours"
