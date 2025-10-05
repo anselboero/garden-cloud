@@ -44,8 +44,14 @@ data "google_iam_policy" "viewer" {
   }
 }
 
-resource "google_storage_bucket_iam_policy" "editor" {
+// adding public access to buckets
+resource "google_storage_bucket_iam_policy" "editor_apis" {
   bucket = "${google_storage_bucket.apis.name}"
+  policy_data = "${data.google_iam_policy.viewer.policy_data}"
+}
+
+resource "google_storage_bucket_iam_policy" "editor_images" {
+  bucket = "${google_storage_bucket.images.name}"
   policy_data = "${data.google_iam_policy.viewer.policy_data}"
 }
 
