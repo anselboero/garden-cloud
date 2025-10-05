@@ -1,17 +1,3 @@
-// TODO: remove that after adding force_destroy
-resource "google_storage_bucket" "last_movie_watched" {
-    name = "${var.project}-last-movie-watched"
-    location = "europe-west10"
-    uniform_bucket_level_access = true
-    force_destroy = true
-
-    cors {
-      origin          = ["https://anselboero.com"]
-      method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
-      response_header = ["*"]
-  }
-}
-
 // where source code will be stored
 resource "google_storage_bucket" "default" {
     name = "${var.project}-gcf-source"
@@ -23,6 +9,20 @@ resource "google_storage_bucket" "default" {
 // storing the bucket with json data coming from different Cloud Functions
 resource "google_storage_bucket" "apis" {
     name = "${var.project}-apis"
+    location = "europe-west10"
+    uniform_bucket_level_access = true
+    force_destroy = true
+
+    cors {
+      origin          = ["https://anselboero.com"]
+      method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+      response_header = ["*"]
+  }
+}
+
+// Storing here all the custom images used within the blog
+resource "google_storage_bucket" "images" {
+    name = "${var.project}-images"
     location = "europe-west10"
     uniform_bucket_level_access = true
     force_destroy = true
