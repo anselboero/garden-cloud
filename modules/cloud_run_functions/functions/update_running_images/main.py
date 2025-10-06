@@ -46,7 +46,8 @@ def update_running_images(request):
     df.set_index('Date', inplace=True)
 
     # --- 3. Aggregate Data by Week ---
-    weekly_sums = df[['Distance', 'Total Time', 'Time x Avg HR']].resample('W-Mon').sum()
+    weekly_sums = df[['Distance', 'Total Time', 'Time x Avg HR']].resample('W-Mon',
+        label='left', closed='left').sum()
     weekly_sums['Weighted Avg Pace'] = weekly_sums['Total Time'] / weekly_sums['Distance']
     weekly_sums['Weighted Avg HR'] = weekly_sums['Time x Avg HR'] / weekly_sums['Total Time']
     weekly_data = weekly_sums[['Weighted Avg Pace', 'Weighted Avg HR']].dropna()
