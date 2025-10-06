@@ -10,7 +10,7 @@ resource "google_compute_instance" "free_tier_vm" {
   boot_disk {
     initialize_params {
       image = "debian-cloud/debian-11"
-      size  = 30
+      size  = 12
       type  = "pd-standard"
     }
   }
