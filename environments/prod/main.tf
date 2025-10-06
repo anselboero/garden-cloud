@@ -7,7 +7,7 @@ provider "google" {
 }
 
 module "cloud_run_functions" {
-  source  = "../../modules/cloud_run_functions"
+  source  = "../../modules"
   project = "${var.project}"
   service_account_email = "${var.service_account_email}"
 }
