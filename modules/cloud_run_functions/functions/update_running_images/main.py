@@ -32,7 +32,7 @@ def update_running_images(request):
         gcs_path = f"gs://{data_bucket_name}/{csv_file_name}"
         df = pd.read_csv(gcs_path)
         # Filter for "Base" runs
-        df = df[(df['sport'] == 'running') & (df['name'].str.contains('Base', na=False))]
+        df = df[(df['sport'] == 'running') & (df['name'].str.contains('Base|Long Run', na=False))]
     except Exception as e:
         return f"Error reading from GCS: {e}", 500
 
